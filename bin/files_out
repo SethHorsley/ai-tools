@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Function to print usage
+print_usage() {
+  echo "Usage: $0 <file_pattern1> [<file_pattern2> ...]"
+  echo "Example: $0 ./*.swift app/components/rbui/accordion*.{rb,js}"
+}
+
+# Check if at least one argument was provided
+if [ $# -eq 0 ]; then
+  echo "Please provide at least one file pattern."
+  print_usage
+  exit 1
+fi
+
+# Loop through all provided arguments
+for pattern in "$@"; do
+  # Use find command with the provided pattern
+  find . -path "$pattern" 2>/dev/null | while read -r file; do
+    # Check if the file exists and is readable
+    if [ -f "$file" ] && [ -r "$file" ]; then
+      # Print the file path as a comment
+      echo "# File: $file"
+
+      # Print the contents of the file
+      cat "$file"
+
+      # Print a separator
+      echo
+      echo "================================================================================"
+      echo
+    fi
+  done
+done
+
