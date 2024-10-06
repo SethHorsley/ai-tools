@@ -17,13 +17,13 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: agg_files
-            asset_name: agg_files-linux-amd64
-          - os: windows-latest
-            artifact_name: agg_files.exe
-            asset_name: agg_files-windows-amd64.exe
+            asset_name: agg_files-linux-x86_64
           - os: macos-latest
             artifact_name: agg_files
-            asset_name: agg_files-macos-amd64
+            asset_name: agg_files-darwin-x86_64
+          - os: windows-latest
+            artifact_name: agg_files.exe
+            asset_name: agg_files-windows-x86_64.exe
 
     steps:
       - uses: actions/checkout@v2
