@@ -1,0 +1,12 @@
+[package]
+name = "agg_files"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+walkdir = "2.3"
+regex = "1.5"
+
+[[bin]]
+name = "agg_files"
+path = "main.rs"
