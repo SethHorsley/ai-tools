@@ -21,6 +21,9 @@ jobs:
           - os: macos-latest
             artifact_name: agg_files
             asset_name: agg_files-darwin-x86_64
+          - os: macos-latest
+            artifact_name: agg_files
+            asset_name: agg_files-darwin-arm64
           - os: windows-latest
             artifact_name: agg_files.exe
             asset_name: agg_files-windows-x86_64.exe
@@ -28,14 +31,37 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Add ARM64 target (macOS only)
+        if: matrix.os == 'macos-latest' && contains(matrix.asset_name, 'arm64')
+        run: rustup target add aarch64-apple-darwin
+
       - name: Build
         working-directory: ./agg_files
-        run: cargo build --release
+        run: |
+          if [[ "${{ matrix.asset_name }}" == *"-arm64" ]]; then
+            cargo build --release --target aarch64-apple-darwin
+          else
+            cargo build --release
+          fi
+
+      - name: Prepare binary
+        run: |
+          if [[ "${{ matrix.asset_name }}" == *"-arm64" ]]; then
+            cp agg_files/target/aarch64-apple-darwin/release/${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+          else
+            cp agg_files/target/release/${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+          fi
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: agg_files/target/release/${{ matrix.artifact_name }}
+          file: ${{ matrix.asset_name }}
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
