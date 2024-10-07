@@ -20,7 +20,7 @@ fn main() {
         if arg == "-r" {
             recursive = true;
         } else {
-            patterns.push(arg);
+            patterns.push(arg.clone());
         }
     }
 
@@ -86,7 +86,8 @@ fn glob_to_regex(pattern: &str) -> Regex {
         .replace("*", ".*")
         .replace("{", "(")
         .replace("}", ")")
-        .replace(",", "|");
-    Regex::new(&format!("^{}$", regex_str)).unwrap()
+        .replace(",", "|")
+        .replace(" ", "");  // Remove spaces
+    Regex::new(&format!(".*{}$", regex_str)).unwrap()
 }
 
