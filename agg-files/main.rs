@@ -3,6 +3,7 @@ use std::fs;
 use std::path::Path;
 use walkdir::WalkDir;
 use regex::Regex;
+use std::process::Command;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -29,11 +30,32 @@ fn main() {
         return;
     }
 
-    let ignored_dirs = get_ignored_dirs();
+    let is_git_repo = is_git_repository();
+    let ignored_dirs = if is_git_repo {
+        get_ignored_dirs()
+    } else {
+        Vec::new()
+    };
 
     for pattern in patterns {
-        process_pattern(&pattern, recursive, &ignored_dirs);
+        if pattern == "*" || pattern == "./*" {
+            if is_git_repo {
+                process_git_files(recursive, &ignored_dirs);
+            } else {
+                process_all_files(recursive, &ignored_dirs);
+            }
+        } else {
+            process_pattern(&pattern, recursive, &ignored_dirs);
+        }
     }
+}
+
+fn is_git_repository() -> bool {
+    Command::new("git")
+        .args(&["rev-parse", "--is-inside-work-tree"])
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
 }
 
 fn get_ignored_dirs() -> Vec<String> {
@@ -48,6 +70,40 @@ fn get_ignored_dirs() -> Vec<String> {
     ignored_dirs
 }
 
+fn process_git_files(recursive: bool, ignored_dirs: &[String]) {
+    let output = Command::new("git")
+        .args(&["ls-files"])
+        .output()
+        .expect("Failed to execute git command");
+
+    let files = String::from_utf8_lossy(&output.stdout);
+    for file in files.lines() {
+        let path = Path::new(file);
+        if recursive || path.parent().map_or(true, |p| p == Path::new("")) {
+            if !is_ignored(path, ignored_dirs) {
+                process_file(path);
+            }
+        }
+    }
+}
+
+fn process_all_files(recursive: bool, ignored_dirs: &[String]) {
+    let walker = if recursive {
+        WalkDir::new(".")
+    } else {
+        WalkDir::new(".").max_depth(1)
+    };
+
+    for entry in walker.into_iter().filter_entry(|e| !is_ignored(e.path(), ignored_dirs)) {
+        if let Ok(entry) = entry {
+            let path = entry.path();
+            if path.is_file() {
+                process_file(path);
+            }
+        }
+    }
+}
+
 fn process_pattern(pattern: &str, recursive: bool, ignored_dirs: &[String]) {
     let regex = glob_to_regex(pattern);
     let walker = if recursive {
@@ -56,7 +112,7 @@ fn process_pattern(pattern: &str, recursive: bool, ignored_dirs: &[String]) {
         WalkDir::new(".").max_depth(1)
     };
 
-    for entry in walker.into_iter().filter_entry(|e| !is_ignored(e, ignored_dirs)) {
+    for entry in walker.into_iter().filter_entry(|e| !is_ignored(e.path(), ignored_dirs)) {
         if let Ok(entry) = entry {
             let path = entry.path();
             if path.is_file() && regex.is_match(path.to_str().unwrap_or("")) {
@@ -66,8 +122,8 @@ fn process_pattern(pattern: &str, recursive: bool, ignored_dirs: &[String]) {
     }
 }
 
-fn is_ignored(entry: &walkdir::DirEntry, ignored_dirs: &[String]) -> bool {
-    ignored_dirs.iter().any(|dir| entry.path().starts_with(dir))
+fn is_ignored(path: &Path, ignored_dirs: &[String]) -> bool {
+    ignored_dirs.iter().any(|dir| path.starts_with(dir))
 }
 
 fn process_file(path: &Path) {
@@ -90,4 +146,3 @@ fn glob_to_regex(pattern: &str) -> Regex {
         .replace(" ", "");  // Remove spaces
     Regex::new(&format!(".*{}$", regex_str)).unwrap()
 }
-
