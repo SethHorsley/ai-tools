@@ -1,5 +1,5 @@
 [package]
-name = "agg_files"
+name = "agg-files"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,5 +8,5 @@ walkdir = "2.3"
 regex = "1.5"
 
 [[bin]]
-name = "agg_files"
+name = "agg-files"
 path = "main.rs"

@@ -1,15 +1,32 @@
-name: Release
+name: Build and Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main # or your default branch name
 
 permissions:
   contents: write
 
 jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.bump_version.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Bump version and push tag
+        id: bump_version
+        uses: anothrNick/github-tag-action@1.35.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
+          DEFAULT_BUMP: patch
+          WITH_V: true
+
   release:
+    needs: bump-version
     name: Release for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -73,11 +90,14 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.asset_name }}
           asset_name: ${{ matrix.asset_name }}
-          tag: ${{ github.ref }}
+          tag: ${{ needs.bump-version.outputs.new_tag }}
+          release_name: Release ${{ needs.bump-version.outputs.new_tag }}
+          overwrite: true
+          body: "This is an automated release"
 
   update-homebrew-formula:
     name: Update Homebrew Formula
-    needs: release
+    needs: [bump-version, release]
     runs-on: ubuntu-latest
     steps:
       - name: Get release info
@@ -98,7 +118,7 @@ jobs:
           formula-path: Formula/agg-files.rb
           homebrew-tap: SethHorsley/homebrew-tap
           base-branch: main
-          download-url: https://github.com/SethHorsley/agg-files/archive/refs/tags/${{ github.ref_name }}.tar.gz
+          download-url: https://github.com/SethHorsley/agg-files/archive/refs/tags/${{ needs.bump-version.outputs.new_tag }}.tar.gz
           custom-variable: |
             intel_url=${{ steps.set_urls.outputs.INTEL_URL }}
             arm_url=${{ steps.set_urls.outputs.ARM_URL }}
