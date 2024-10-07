@@ -118,7 +118,8 @@ jobs:
           formula-path: Formula/agg-files.rb
           homebrew-tap: SethHorsley/homebrew-tap
           base-branch: main
-          download-url: https://github.com/SethHorsley/agg-files/archive/refs/tags/${{ needs.bump-version.outputs.new_tag }}.tar.gz
+          download-url: https://github.com/SethHorsley/ai-tools/archive/refs/tags/${{ github.ref_name }}.tar.gz
+          # download-url: https://github.com/SethHorsley/agg-files/archive/refs/tags/${{ needs.bump-version.outputs.new_tag }}.tar.gz
           custom-variable: |
             intel_url=${{ steps.set_urls.outputs.INTEL_URL }}
             arm_url=${{ steps.set_urls.outputs.ARM_URL }}
