@@ -33,17 +33,17 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: agg_files
-            asset_name: agg_files-linux-x86_64
+            artifact_name: agg-files
+            asset_name: agg-files-linux-x86_64
           - os: macos-13
-            artifact_name: agg_files
-            asset_name: agg_files-darwin-x86_64
+            artifact_name: agg-files
+            asset_name: agg-files-darwin-x86_64
           - os: macos-latest
-            artifact_name: agg_files
-            asset_name: agg_files-darwin-arm64
+            artifact_name: agg-files
+            asset_name: agg-files-darwin-arm64
           - os: windows-latest
-            artifact_name: agg_files.exe
-            asset_name: agg_files-windows-x86_64.exe
+            artifact_name: agg-files.exe
+            asset_name: agg-files-windows-x86_64.exe
 
     steps:
       - uses: actions/checkout@v2
@@ -59,7 +59,7 @@ jobs:
         run: rustup target add aarch64-apple-darwin
 
       - name: Build
-        working-directory: ./agg_files
+        working-directory: ./agg-files
         run: |
           if [[ "${{ matrix.asset_name }}" == *"-arm64" ]]; then
             cargo build --release --target aarch64-apple-darwin
@@ -72,16 +72,16 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           if [[ "${{ matrix.asset_name }}" == *"-arm64" ]]; then
-            cp agg_files/target/aarch64-apple-darwin/release/${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+            cp agg-files/target/aarch64-apple-darwin/release/${{ matrix.artifact_name }} ${{ matrix.asset_name }}
           else
-            cp agg_files/target/release/${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+            cp agg-files/target/release/${{ matrix.artifact_name }} ${{ matrix.asset_name }}
           fi
         shell: bash
 
       - name: Prepare binary (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          Copy-Item agg_files\target\release\${{ matrix.artifact_name }} -Destination ${{ matrix.asset_name }}
+          Copy-Item agg-files\target\release\${{ matrix.artifact_name }} -Destination ${{ matrix.asset_name }}
         shell: pwsh
 
       - name: Upload binaries to release

@@ -1,11 +1,11 @@
-# agg_files
+# agg-files
 
 A simple Rust script to aggregate file contents based on glob patterns.
 
 ## Usage
 
 ```bash
-agg_files [-r] <file_pattern1> [<file_pattern2> ...]
+agg-files [-r] <file_pattern1> [<file_pattern2> ...]
 ```
 
 - `-r`: Search recursively
@@ -14,9 +14,9 @@ agg_files [-r] <file_pattern1> [<file_pattern2> ...]
 ## Examples
 
 ```bash
-agg_files ".rs"
-agg_files -r "src/**/.{rs,toml}"
-agg_files "lib/rbui/command/*.{rb,js}" -r
+agg-files ".rs"
+agg-files -r "src/**/.{rs,toml}"
+agg-files "lib/rbui/command/*.{rb,js}" -r
 ```
 
 ## Features
