@@ -74,3 +74,33 @@ jobs:
           file: ${{ matrix.asset_name }}
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
+
+  update-homebrew-formula:
+    name: Update Homebrew Formula
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get release info
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set binary URLs
+        id: set_urls
+        run: |
+          echo "INTEL_URL=${{ steps.get_release.outputs.browser_download_url }}/agg-files-darwin-x86_64" >> $GITHUB_OUTPUT
+          echo "ARM_URL=${{ steps.get_release.outputs.browser_download_url }}/agg-files-darwin-arm64" >> $GITHUB_OUTPUT
+
+      - uses: mislav/bump-homebrew-formula-action@v3
+        with:
+          formula-name: agg-files
+          formula-path: Formula/agg-files.rb
+          homebrew-tap: SethHorsley/homebrew-tap
+          base-branch: main
+          download-url: https://github.com/SethHorsley/agg-files/archive/refs/tags/${{ github.ref_name }}.tar.gz
+          custom-variable: |
+            intel_url=${{ steps.set_urls.outputs.INTEL_URL }}
+            arm_url=${{ steps.set_urls.outputs.ARM_URL }}
+        env:
+          COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
