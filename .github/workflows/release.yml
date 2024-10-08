@@ -14,7 +14,7 @@ jobs:
     outputs:
       new_tag: ${{ steps.bump_version.outputs.new_tag }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Bump version and push tag
@@ -46,7 +46,7 @@ jobs:
             asset_name: agg-files-windows-x86_64.exe
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
@@ -111,6 +111,7 @@ jobs:
         run: |
           echo "INTEL_URL=${{ steps.get_release.outputs.browser_download_url }}/agg-files-darwin-x86_64" >> $GITHUB_OUTPUT
           echo "ARM_URL=${{ steps.get_release.outputs.browser_download_url }}/agg-files-darwin-arm64" >> $GITHUB_OUTPUT
+          echo "${{ steps.get_release.outputs.browser_download_url }}/agg-files-darwin-x86_64"
 
       - uses: mislav/bump-homebrew-formula-action@v3
         with:
