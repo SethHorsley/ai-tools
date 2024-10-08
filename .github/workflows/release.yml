@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
       - name: Bump version and push tag
         id: bump_version
-        uses: anothrNick/github-tag-action@1.35.0
+        uses: anothrNick/github-tag-action@1.61.0
         env:
           GITHUB_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
           DEFAULT_BUMP: patch
@@ -100,18 +100,25 @@ jobs:
     needs: [bump-version, release]
     runs-on: ubuntu-latest
     steps:
-      - name: Get release info
+      - name: Get latest release
         id: get_release
-        uses: bruceadams/get-release@v1.2.3
-        env:
-          GITHUB_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const release = await github.rest.repos.getLatestRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            core.setOutput('tag_name', release.data.tag_name);
+            core.setOutput('html_url', release.data.html_url);
+            core.setOutput('upload_url', release.data.upload_url);
 
       - name: Set binary URLs
         id: set_urls
         run: |
-          echo "INTEL_URL=${{ steps.get_release.outputs.browser_download_url }}/agg-files-darwin-x86_64" >> $GITHUB_OUTPUT
-          echo "ARM_URL=${{ steps.get_release.outputs.browser_download_url }}/agg-files-darwin-arm64" >> $GITHUB_OUTPUT
-          echo "${{ steps.get_release.outputs.browser_download_url }}/agg-files-darwin-x86_64"
+          echo "INTEL_URL=${{ steps.get_release.outputs.html_url }}/agg-files-darwin-x86_64" >> $GITHUB_OUTPUT
+          echo "ARM_URL=${{ steps.get_release.outputs.html_url }}/agg-files-darwin-arm64" >> $GITHUB_OUTPUT
 
       - uses: mislav/bump-homebrew-formula-action@v3
         with:
@@ -119,8 +126,7 @@ jobs:
           formula-path: Formula/agg-files.rb
           homebrew-tap: SethHorsley/homebrew-tap
           base-branch: main
-          download-url: https://github.com/SethHorsley/ai-tools/archive/refs/tags/${{ github.ref_name }}.tar.gz
-          # download-url: https://github.com/SethHorsley/agg-files/archive/refs/tags/${{ needs.bump-version.outputs.new_tag }}.tar.gz
+          download-url: https://github.com/${{ github.repository }}/archive/refs/tags/${{ steps.get_release.outputs.tag_name }}.tar.gz
           custom-variable: |
             intel_url=${{ steps.set_urls.outputs.INTEL_URL }}
             arm_url=${{ steps.set_urls.outputs.ARM_URL }}
