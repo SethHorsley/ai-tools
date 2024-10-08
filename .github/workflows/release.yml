@@ -9,24 +9,26 @@ permissions:
   contents: write
 
 jobs:
-  bump-version:
+  build:
     runs-on: ubuntu-latest
     outputs:
-      new_tag: ${{ steps.bump_version.outputs.new_tag }}
+      new_tag: ${{ steps.semver.outputs.new_tag }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
-          fetch-depth: 0
-      - name: Bump version and push tag
-        id: bump_version
-        uses: anothrNick/github-tag-action@1.61.0
+          fetch-depth: "0"
+      - name: Determine semver
+        id: semver
+        uses: anothrNick/github-tag-action@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BUMP: patch
           WITH_V: true
+          DRY_RUN: true
 
   release:
-    needs: bump-version
+    needs: build
     name: Release for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -84,20 +86,26 @@ jobs:
           Copy-Item agg-files\target\release\${{ matrix.artifact_name }} -Destination ${{ matrix.asset_name }}
         shell: pwsh
 
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+      - name: Add semver tag
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag ${{ needs.build.outputs.new_tag }}
+          git push --tags
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ matrix.asset_name }}
-          asset_name: ${{ matrix.asset_name }}
-          tag: ${{ needs.bump-version.outputs.new_tag }}
-          release_name: Release ${{ needs.bump-version.outputs.new_tag }}
-          overwrite: true
+          files: ${{ matrix.asset_name }}
+          tag_name: ${{ needs.build.outputs.new_tag }}
+          name: Release ${{ needs.build.outputs.new_tag }}
           body: "This is an automated release"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   update-homebrew-formula:
     name: Bump Homebrew formula
-    needs: [bump-version, release]
+    needs: [build, release]
     runs-on: ubuntu-latest
     steps:
       - uses: mislav/bump-homebrew-formula-action@v3
@@ -105,6 +113,7 @@ jobs:
           formula-name: agg-files
           homebrew-tap: SethHorsley/homebrew-tap
           base-branch: main
-          download-url: https://github.com/${{ github.repository }}/archive/refs/tags/${{ needs.bump-version.outputs.new_tag }}.tar.gz
+          download-url: https://github.com/${{ github.repository }}/archive/refs/tags/${{ needs.build.outputs.new_tag }}.tar.gz
+          tag-name: ${{ needs.build.outputs.new_tag }}
         env:
           COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
