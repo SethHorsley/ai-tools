@@ -104,7 +104,7 @@ jobs:
         id: get_release
         uses: bruceadams/get-release@v1.2.3
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
 
       - name: Set binary URLs
         id: set_urls
